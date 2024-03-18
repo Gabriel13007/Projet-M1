@@ -114,8 +114,16 @@ public class MonJoueur extends Joueur {
 		if(plateau != null) {
 			Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
 			Integer stock = mapStock.get(p);
-			if(stock != null && nbTourRestant()-stock<donneRessources()) {
-				return donneRessources() - stock - nbTourRestant();
+			int donMax;
+			if(stock != null) {
+				donMax = nbTourRestant() - stock;
+			} else {
+				donMax = nbTourRestant();
+			}
+			if(donMax < donneRessources()) {
+				return donMax;
+			} else {
+				donneRessources();
 			}
 		}
 		return donneRessources();
@@ -159,16 +167,14 @@ public class MonJoueur extends Joueur {
 								Plateau.CHERCHE_TOUT);
 						ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
 								mapFabriqueProche.get(2).get(0), convertToNode(mapObstacle, true, false, true));
-						pcc.toString();
-						if(!pcc.isEmpty()) return moveTo(pcc.get(0));
+						if(pcc != null) return moveTo(pcc.get(0));
 					}
 					if(estMaFabrique(fabrique) &&  estRempli(fabrique)) {
 						HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), i,
 								Plateau.CHERCHE_TOUT);
 						ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
 								mapFabriqueProche.get(2).get(0), convertToNode(mapObstacle, true, false, true));
-						pcc.toString();
-						if(!pcc.isEmpty()) return moveTo(pcc.get(0));
+						if(pcc != null) return moveTo(pcc.get(0));
 					}
 				}
 			}
