@@ -65,12 +65,11 @@ public class ColonOptimise3 extends MonJoueur{
 				don = donneRessources();
 			}
 		}
-		return don;
-//		if(don != 0 && don <= 350) {
-//			return don;
-//		}else {
-//			return 350;
-//		}
+		if(don != 0 && don <= 400) {
+			return don;
+		}else {
+			return 400;
+		}
 		//return donneRessources();
 	}
 	

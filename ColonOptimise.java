@@ -17,7 +17,7 @@ public class ColonOptimise extends MonJoueur{
 	protected boolean estPresqueVide(Point fabrique) {
 		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
 		Integer stock = mapStock.get(fabrique);
-		return stock == null || stock <= 200;
+		return stock == null || stock <= 250;
 	}
 	
 	@Override
@@ -125,5 +125,4 @@ public class ColonOptimise extends MonJoueur{
 		if(bestPcc != null && bestPcc.get(0) != null) return moveTo(bestPcc.get(0));
 		return null;
 	}
-
 }
