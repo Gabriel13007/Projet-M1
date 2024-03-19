@@ -10,6 +10,7 @@ import java.util.Map;
 import gui.Point;
 import jeu.Joueur;
 import jeu.Plateau;
+import jeu.Joueur.Action;
 import jeu.astar.Node;
 
 /**
@@ -19,7 +20,7 @@ import jeu.astar.Node;
  * @author ???
  */
 public class MonJoueur extends Joueur {
-	Plateau plateau;
+	protected Plateau plateau;
 	public MonJoueur(String sonNom) {
 		super(sonNom);
 	}
@@ -27,9 +28,10 @@ public class MonJoueur extends Joueur {
 	
 	@Override
 	public Action faitUneAction(Plateau etatDuJeu) {
-		System.out.println(this.donnePosition().toString());
+//		System.out.println(etatDuJeu.cherche(this.donnePosition(), 500,Plateau.CHERCHE_TOUT).toString());
 		plateau = etatDuJeu;
-		if (this.donneRessources() < 451) {
+		if ((!estSurColline() && this.donneRessources() < 200) ||
+				(estSurColline() && this.donneRessources() < 475)) {
 			Action action = moveToColline();
 			if(action != null) {
 				return action;
@@ -43,8 +45,7 @@ public class MonJoueur extends Joueur {
 		return super.faitUneAction(plateau); // a modifier
 	}
 
-	@SuppressWarnings("static-access")
-	public List<Node> convertToNode(HashMap<Integer, ArrayList<Point>> map, boolean includeColline,
+	protected List<Node> convertToNode(HashMap<Integer, ArrayList<Point>> map, boolean includeColline,
 			boolean includeFabrique, boolean includeJoueur) {
 		List<Node> lst = new ArrayList<>();
 
@@ -79,24 +80,24 @@ public class MonJoueur extends Joueur {
 		return lst;
 	}
 
-	private boolean estRempli(Point fabrique) {
+	protected boolean estRempli(Point fabrique) {
 		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
 		Integer stock = mapStock.get(fabrique);
 		return stock >= nbTourRestant();
 	}
 	
-	private boolean estVide(Point fabrique) {
+	protected boolean estVide(Point fabrique) {
 		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
 		Integer stock = mapStock.get(fabrique);
 		return stock == null || stock == 0;
 	}
 	
 	@SuppressWarnings("static-access")
-	private boolean estMaFabrique(Point fabrique) {
+	protected boolean estMaFabrique(Point fabrique) {
 		return (donneRang()+1) == plateau.donneUtilisateurDeLaFabrique(plateau.donneContenuCellule(fabrique.x, fabrique.y));
 	}
 
-	private Action moveTo(Node node) {
+	protected Action moveTo(Node node) {
 		Point pos = donnePosition();
 		if (pos.x < node.x) {
 			return Action.DROITE;
@@ -130,13 +131,20 @@ public class MonJoueur extends Joueur {
 		return donneRessources();
 	}
 	
-	private int nbTourRestant() {
+	protected int nbTourRestant() {
 		return (plateau.donneNombreDeTours() - plateau.donneTourCourant());
 	}
 	
-	@SuppressWarnings("static-access")
-	private Action moveToColline() {
-		if (plateau.contientUneColline(plateau.donneContenuCellule(this.donnePosition()))) {
+	protected boolean sontToutesRemplies() {
+		return false;
+	}
+	
+	protected boolean estSurColline() {
+		return Plateau.contientUneColline(plateau.donneContenuCellule(this.donnePosition()));
+	}
+	
+	protected Action moveToColline() {
+		if (estSurColline()) {
 			return Action.RIEN;
 		} else {
 			int plateauTaille = plateau.donneTaille();
@@ -155,8 +163,7 @@ public class MonJoueur extends Joueur {
 		return null;
 	}
 	
-	@SuppressWarnings("static-access")
-	private Action moveToFabrique() {
+	protected Action moveToFabrique() {
 		int plateauTaille = plateau.donneTaille();
 		for (int i = 1; i < plateauTaille; i++) {
 			HashMap<Integer, ArrayList<Point>> mapFabriqueProche = plateau.cherche(this.donnePosition(), i,
@@ -182,26 +189,4 @@ public class MonJoueur extends Joueur {
 		}
 		return null;
 	}
-	
-	// Stratégie : Le colon
-//	@SuppressWarnings("static-access")
-//	private Action moveToFabrique() {
-//		int plateauTaille = plateau.donneTaille();
-//		for (int i = 1; i < plateauTaille; i++) {
-//			HashMap<Integer, ArrayList<Point>> mapFabriqueProche = plateau.cherche(this.donnePosition(), i,
-//					Plateau.CHERCHE_FABRIQUE);
-//			if (!mapFabriqueProche.get(2).isEmpty()) {
-//				for(Point fabrique : mapFabriqueProche.get(2)) {
-//					if(estVide(fabrique)) {
-//						HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), i,
-//								Plateau.CHERCHE_TOUT);
-//						ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
-//								fabrique, convertToNode(mapObstacle, false, false, true));
-//						if(pcc != null && pcc.get(0) != null) return moveTo(pcc.get(0));
-//					}
-//				}
-//			}
-//		}
-//		return null;
-//	}
 }
