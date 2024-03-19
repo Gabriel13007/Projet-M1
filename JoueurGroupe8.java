@@ -22,6 +22,12 @@ public class JoueurGroupe8 extends Joueur {
 	public JoueurGroupe8(String sonNom) {
 		super(sonNom);
 	}
+	
+	protected boolean estPresqueVideAttaque(Point fabrique) {
+		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
+		Integer stock = mapStock.get(fabrique);
+		return stock == null || stock <= 150;
+	}
 
 	
 	@Override
@@ -137,10 +143,6 @@ public class JoueurGroupe8 extends Joueur {
 		return (plateau.donneNombreDeTours() - plateau.donneTourCourant());
 	}
 	
-	private boolean sontToutesRemplies() {
-		return false;
-	}
-	
 	private boolean estSurColline() {
 		return Plateau.contientUneColline(plateau.donneContenuCellule(this.donnePosition()));
 	}
@@ -182,6 +184,8 @@ public class JoueurGroupe8 extends Joueur {
 				Plateau.CHERCHE_FABRIQUE);
 		ArrayList<Node> bestPccVide = null;
 		ArrayList<Node> bestPcc = null;
+		ArrayList<Node> bestPccGuetApens = null;
+		Integer worstStock = null;
 		for(Point fabrique : mapFabriqueProche.get(2)) {
 			if(estVide(fabrique) || (estMaFabrique(fabrique) && estPresqueVide(fabrique))) {
 				HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
@@ -220,11 +224,36 @@ public class JoueurGroupe8 extends Joueur {
 					if(ok) bestPcc = pcc;
 				}
 			}
+			
+			Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
+			Integer stock = mapStock.get(fabrique);
+			if((worstStock == null && stock != null) || (stock != null && worstStock > stock)) {
+				worstStock = stock;
+				HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
+						Plateau.CHERCHE_FABRIQUE);
+				mapObstacle.putAll(plateau.cherche(this.donnePosition(), 500,
+						Plateau.CHERCHE_JOUEUR));
+				bestPccGuetApens = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
+						fabrique, convertToNode(mapObstacle, false, true, true));
+			}
 		}
 		
 		
 		if(bestPccVide != null && bestPccVide.get(0) != null) return moveTo(bestPccVide.get(0));
 		if(bestPcc != null && bestPcc.get(0) != null) return moveTo(bestPcc.get(0));
+		if(bestPccGuetApens != null && bestPccGuetApens.get(0) != null) return moveTo(bestPccGuetApens.get(0));
 		return null;
+	}
+	
+	@Override
+	protected void finDePartie(String lePlateau) {
+		System.out.println();
+		if(plateau != null) {
+			for(int i=0; i<4; i++) {
+				Joueur joueur = plateau.donneJoueur(i);
+				System.out.println(joueur.donneNom()+" a "+ joueur.donnePoints()+" points !");
+			}
+		}
+		System.out.println();
 	}
 }
