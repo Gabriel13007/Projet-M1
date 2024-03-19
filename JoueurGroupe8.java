@@ -22,17 +22,14 @@ public class JoueurGroupe8 extends Joueur {
 	public JoueurGroupe8(String sonNom) {
 		super(sonNom);
 	}
-	
-	protected boolean estPresqueVideAttaque(Point fabrique) {
-		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
-		Integer stock = mapStock.get(fabrique);
-		return stock == null || stock <= 150;
-	}
 
 	
 	@Override
 	public Action faitUneAction(Plateau etatDuJeu) {
 		plateau = etatDuJeu;
+		if(areAllFull()) {
+			return Action.RIEN;
+		}
 		if ((!estSurColline() && this.donneRessources() < 200) ||
 				(estSurColline() && this.donneRessources() < 475)) {
 			Action action = moveToColline();
@@ -46,6 +43,15 @@ public class JoueurGroupe8 extends Joueur {
 			}
 		}
 		return super.faitUneAction(plateau); // a modifier
+	}
+	
+	private boolean areAllFull() {
+		ArrayList<Point> fabriquesProches = plateau.cherche(this.donnePosition(), 500,
+				Plateau.CHERCHE_FABRIQUE).get(2);
+		for(Point fabrique : fabriquesProches) {
+			if(!estRempli(fabrique)) return false;
+		}
+		return true;
 	}
 
 	private List<Node> convertToNode(HashMap<Integer, ArrayList<Point>> map, boolean includeColline,
@@ -77,7 +83,9 @@ public class JoueurGroupe8 extends Joueur {
 		if (includeJoueur) {
 			ArrayList<Point> lstJoueur = map.get(4);
 			for (Point joueur : lstJoueur) {
-				lst.add(new Node(joueur.x, joueur.y));
+				if(joueur != donnePosition()) {
+					lst.add(new Node(joueur.x, joueur.y));
+				}
 			}
 		}
 		return lst;
@@ -86,7 +94,7 @@ public class JoueurGroupe8 extends Joueur {
 	private boolean estRempli(Point fabrique) {
 		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
 		Integer stock = mapStock.get(fabrique);
-		return stock >= nbTourRestant();
+		return stock != null && stock >= nbTourRestant();
 	}
 	
 	private boolean estVide(Point fabrique) {
@@ -132,11 +140,12 @@ public class JoueurGroupe8 extends Joueur {
 				don = donneRessources();
 			}
 		}
-		if(don != 0 && don <= 350) {
-			return don;
-		}else {
-			return 350;
-		}
+		return don;
+//		if(don != 0 && don <= 350) {
+//			return don;
+//		}else {
+//			return 350;
+//		}
 	}
 	
 	private int nbTourRestant() {
@@ -150,13 +159,64 @@ public class JoueurGroupe8 extends Joueur {
 	private boolean estPresqueVide(Point fabrique) {
 		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
 		Integer stock = mapStock.get(fabrique);
-		return stock == null || stock <= 250;
+		return stock == null || stock <= Math.min(nbTourRestant()-1, 250);
+	}
+	
+	protected boolean estPresqueVideAttaque(Point fabrique) {
+		Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
+		Integer stock = mapStock.get(fabrique);
+		return stock == null || stock <= 100;
+	}
+	
+	private ArrayList<Point> getMapJoueurSansMoi() {
+		ArrayList<Point> resultat = plateau.cherche(this.donnePosition(), 500,Plateau.CHERCHE_JOUEUR).get(4);
+		resultat.remove(donnePosition());
+		return resultat;
 	}
 	
 	private Action moveToColline() {
 		if (estSurColline()) {
 			return Action.RIEN;
 		} else {
+			ArrayList<Node> bestPccFabrique = getBestPccFabrique();
+			ArrayList<Node> pccCollineOpti = null;
+			ArrayList<Node> pccCollineDefault = null;
+			if(bestPccFabrique != null) {
+				Node fabriqueNode = getBestPccFabrique().get(getBestPccFabrique().size()-1);
+				Point fabrique = new Point(fabriqueNode.x,fabriqueNode.y);
+				ArrayList<Point> collineProche = plateau.cherche(fabrique, 500,
+						Plateau.CHERCHE_COLLINE).get(1);
+				ArrayList<Node> bestPcc = null;
+				Point bestColline = null;
+				for(Point colline : collineProche) {
+					int contenuCellule = plateau.donneContenuCellule(colline.x, colline.y);
+					if(!Plateau.contientUnJoueur(contenuCellule)) {
+						HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
+								Plateau.CHERCHE_FABRIQUE);
+						mapObstacle.put(4,getMapJoueurSansMoi());
+						ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(fabrique,
+								colline, convertToNode(mapObstacle, false, true, true));
+						if(bestPcc == null && pcc != null || pcc != null && pcc.size()<bestPcc.size()) {
+							bestPcc = pcc;
+							bestColline = colline;
+						}
+					}
+				}
+				if(bestColline != null && bestPcc != null && bestPcc.get(0) != null) {
+					HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
+							Plateau.CHERCHE_FABRIQUE);
+					mapObstacle.putAll(plateau.cherche(this.donnePosition(), 500,
+							Plateau.CHERCHE_JOUEUR));
+					ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
+							bestColline, convertToNode(mapObstacle, false, true, true));
+					if(pcc != null) {
+						pccCollineOpti = pcc;
+						//return moveTo(pcc.get(0));
+					}
+					
+				}
+			}
+			
 			ArrayList<Point> collineProche = plateau.cherche(this.donnePosition(), 500,
 					Plateau.CHERCHE_COLLINE).get(1);
 			ArrayList<Node> bestPcc = null;
@@ -174,12 +234,40 @@ public class JoueurGroupe8 extends Joueur {
 					}
 				}
 			}
-			if(bestPcc != null && bestPcc.get(0) != null) return moveTo(bestPcc.get(0));
+			if(bestPcc != null && bestPcc.get(0) != null) {
+				pccCollineDefault = bestPcc;
+				//return moveTo(bestPcc.get(0));
+			}
+			
+			if((pccCollineDefault == null && pccCollineOpti != null) ||
+					pccCollineOpti != null && pccCollineOpti.size() == 1) {
+				return moveTo(pccCollineOpti.get(0));
+			}
+			if(pccCollineDefault != null && pccCollineOpti == null||
+					pccCollineDefault != null && pccCollineDefault.size() == 1) {
+				return moveTo(pccCollineDefault.get(0));
+			}
+			if(pccCollineDefault == null && pccCollineOpti == null) {
+				return null;
+			}
+			
+			if(pccCollineDefault.size()<(pccCollineOpti.size()-5)){
+				return moveTo(pccCollineDefault.get(0));
+			}else {
+				return moveTo(pccCollineOpti.get(0));
+			}
+		}
+	}
+	
+	private Action moveToFabrique() {
+		ArrayList<Node> bestPccFabrique = getBestPccFabrique();
+		if(bestPccFabrique != null) { 
+			return moveTo(getBestPccFabrique().get(0));
 		}
 		return null;
 	}
 	
-	private Action moveToFabrique() {
+	private ArrayList<Node> getBestPccFabrique() {
 		HashMap<Integer, ArrayList<Point>> mapFabriqueProche = plateau.cherche(this.donnePosition(), 500,
 				Plateau.CHERCHE_FABRIQUE);
 		ArrayList<Node> bestPccVide = null;
@@ -225,23 +313,25 @@ public class JoueurGroupe8 extends Joueur {
 				}
 			}
 			
-			Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
-			Integer stock = mapStock.get(fabrique);
-			if((worstStock == null && stock != null) || (stock != null && worstStock > stock)) {
-				worstStock = stock;
-				HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
-						Plateau.CHERCHE_FABRIQUE);
-				mapObstacle.putAll(plateau.cherche(this.donnePosition(), 500,
-						Plateau.CHERCHE_JOUEUR));
-				bestPccGuetApens = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
-						fabrique, convertToNode(mapObstacle, false, true, true));
+			if(estPresqueVideAttaque(fabrique)) {
+				Map<Point, Integer> mapStock = plateau.donneStocksDesFabriques();
+				Integer stock = mapStock.get(fabrique);
+				if((worstStock == null && stock != null) || (stock != null && worstStock > stock)) {
+					worstStock = stock;
+					HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
+							Plateau.CHERCHE_FABRIQUE);
+					mapObstacle.putAll(plateau.cherche(this.donnePosition(), 500,
+							Plateau.CHERCHE_JOUEUR));
+					bestPccGuetApens = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
+							fabrique, convertToNode(mapObstacle, false, true, true));
+				}
 			}
 		}
 		
 		
-		if(bestPccVide != null && bestPccVide.get(0) != null) return moveTo(bestPccVide.get(0));
-		if(bestPcc != null && bestPcc.get(0) != null) return moveTo(bestPcc.get(0));
-		if(bestPccGuetApens != null && bestPccGuetApens.get(0) != null) return moveTo(bestPccGuetApens.get(0));
+		if(bestPccVide != null && bestPccVide.get(0) != null) return bestPccVide;
+		if(bestPccGuetApens != null && bestPccGuetApens.get(0) != null) return bestPccGuetApens;
+		if(bestPcc != null && bestPcc.get(0) != null) return bestPcc;
 		return null;
 	}
 	
