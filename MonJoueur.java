@@ -1,7 +1,5 @@
 package main;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +8,6 @@ import java.util.Map;
 import gui.Point;
 import jeu.Joueur;
 import jeu.Plateau;
-import jeu.Joueur.Action;
 import jeu.astar.Node;
 
 /**
@@ -188,5 +185,16 @@ public class MonJoueur extends Joueur {
 			}
 		}
 		return null;
+	}
+	
+	@Override
+	protected void finDePartie(String lePlateau) {
+		if(plateau != null) {
+			for(int i=0; i<4; i++) {
+				Joueur joueur = plateau.donneJoueur(i);
+				System.out.println("Joueur numéro"+i+" a "+ joueur.donnePoints()+" points !");
+			}
+		}
+		
 	}
 }

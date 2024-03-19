@@ -65,12 +65,12 @@ public class ColonOptimise extends MonJoueur{
 				don = donneRessources();
 			}
 		}
-		
-		if(don != 0 && don <= 350) {
-			return don;
-		}else {
-			return 350;
-		}
+		return don;
+//		if(don != 0 && don <= 350) {
+//			return don;
+//		}else {
+//			return 350;
+//		}
 		//return donneRessources();
 	}
 	
@@ -81,13 +81,13 @@ public class ColonOptimise extends MonJoueur{
 		ArrayList<Node> bestPccVide = null;
 		ArrayList<Node> bestPcc = null;
 		for(Point fabrique : mapFabriqueProche.get(2)) {
-			if(estVide(fabrique) || estPresqueVide(fabrique)) {
+			if(estVide(fabrique) || (estMaFabrique(fabrique) && estPresqueVide(fabrique))) {
 				HashMap<Integer, ArrayList<Point>> mapObstacle = plateau.cherche(this.donnePosition(), 500,
 						Plateau.CHERCHE_FABRIQUE);
 				mapObstacle.putAll(plateau.cherche(this.donnePosition(), 500,
 						Plateau.CHERCHE_JOUEUR));
 				ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
-						fabrique, convertToNode(mapObstacle, false, false, true));
+						fabrique, convertToNode(mapObstacle, false, true, true));
 				if(bestPccVide == null && pcc != null || pcc != null && pcc.size()<bestPccVide.size()) {
 					boolean ok = true;
 					for(Node node : pcc) {
@@ -106,7 +106,7 @@ public class ColonOptimise extends MonJoueur{
 				mapObstacle.putAll(plateau.cherche(this.donnePosition(), 500,
 						Plateau.CHERCHE_JOUEUR));
 				ArrayList<Node> pcc = plateau.donneCheminAvecObstaclesSupplementaires(this.donnePosition(),
-						fabrique, convertToNode(mapObstacle, false, false, true));
+						fabrique, convertToNode(mapObstacle, false, true, true));
 				if(bestPcc == null && pcc != null || pcc != null && pcc.size()<bestPcc.size()) {
 					boolean ok = true;
 					for(Node node : pcc) {
