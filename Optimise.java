@@ -50,7 +50,6 @@ public class Optimise extends MonJoueur{
 //	}
 	
 	@Override
-	@SuppressWarnings("static-access")
 	protected Action moveToFabrique() {
 		HashMap<Integer, ArrayList<Point>> mapFabriqueProche = plateau.cherche(this.donnePosition(), 500,
 				Plateau.CHERCHE_FABRIQUE);
