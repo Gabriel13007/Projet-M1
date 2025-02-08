@@ -9,7 +9,7 @@ import jeu.Joueur.Action;
 import jeu.astar.Node;
 
 public class Colon extends MonJoueur{
-
+	//Test
 	public Colon(String sonNom) {
 		super(sonNom);
 	}
